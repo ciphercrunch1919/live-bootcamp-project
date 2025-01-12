@@ -3,6 +3,7 @@ pub mod routes;
 use axum::{routing::post, serve::Serve, Router};
 use tower_http::services::ServeDir;
 use std::error::Error;
+use routes::{login, logout, signup, verify_2fa, verify_token};
 pub struct Application {
     server: Serve<Router, Router>,
     pub address: String,
@@ -13,11 +14,11 @@ impl Application {
 
         let router = Router::new()
             .nest_service("/", ServeDir::new("assets"))
-            .route("/signup", post(routes::signup))
-            .route("/login", post(routes::login))
-            .route("/logout", post(routes::logout))
-            .route("/verify-2fa", post(routes::verify_2fa))
-            .route("/verify-token", post(routes::verify_token));
+            .route("/signup", post(signup))
+            .route("/login", post(login))
+            .route("/logout", post(logout))
+            .route("/verify-2fa", post(verify_2fa))
+            .route("/verify-token", post(verify_token));
 
         let listener = tokio::net::TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();
