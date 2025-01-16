@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -28,21 +29,20 @@ jobs:
         restore-keys: ${{ runner.os }}-cargo-
 
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
+      run: rustup update stable && rustup default stable
 
     - name: Build and test app-service code
       working-directory: ./app-service
       run: |
         cargo build --verbose
         cargo test --verbose
+
     - name: Build and test auth-service code
       working-directory: ./auth-service
       run: |
         cargo build --verbose
         cargo test --verbose
+
       # Set up Docker Buildx for multi-platform builds
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -63,6 +63,7 @@ jobs:
         set: |
           *.cache-from=type=gha
           *.cache-to=type=gha,mode=max
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -92,6 +93,6 @@ jobs:
         script: |
           cd ~
           export AUTH_SERVICE_IP=${{ vars.DROPLET_IP }}
-          docker-compose down
-          docker-compose pull
-          docker-compose up -d
+          docker compose down
+          docker compose pull
+          docker compose up -d
