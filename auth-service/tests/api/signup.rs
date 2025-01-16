@@ -4,7 +4,6 @@ use auth_service::{routes::SignupResponse, ErrorResponse};
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
     let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let test_cases = [
