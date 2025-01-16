@@ -96,7 +96,7 @@ async fn should_return_400_if_invalid_input() {
         
         assert_eq!(response.status().as_u16(),
             400,
-            "Test case failed: {:?}",
+            "Failed for input: {:?}",
             test_case
         );
 
