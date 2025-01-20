@@ -80,8 +80,25 @@ mod tests {
         let mut user_store = HashmapUserStore::default();
         let email = Email::parse("example@email.com".to_owned()).unwrap();
         let password = Password::parse("password".to_owned()).unwrap();
-        let user = User::new(email, password, false);
-        user_store.add_user(user.clone()).await.unwrap();
-        assert_eq!(user_store.validate_user(&user.email, &user.password).await, Ok(()));
+        let user = User::new(email.clone(), password.clone(), false);
+
+        user_store.users.insert(email.clone(), user.clone());
+        let result = user_store.validate_user(&email, &password).await;
+        assert_eq!(result, Ok(()));
+
+        // Test validating a user that exists with incorrect password
+        let wrong_password = Password::parse("wrongpassword".to_owned()).unwrap();
+        let result = user_store.validate_user(&email, &wrong_password).await;
+        assert_eq!(result, Err(UserStoreError::InvalidCredentials));
+
+        // Test validating a user that doesn't exist
+        let result = user_store
+            .validate_user(
+                &Email::parse("nonexistent@example.com".to_string()).unwrap(),
+                &password,
+            )
+            .await;
+
+        assert_eq!(result, Err(UserStoreError::UserNotFound));
     }
 }
