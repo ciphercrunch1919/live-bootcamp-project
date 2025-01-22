@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use auth_service::{app_state::AppState, services::HashmapUserStore, Application};
+use auth_service::{ app_state::AppState, services::HashmapUserStore, Application };
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
@@ -51,13 +51,17 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn post_login(&self) -> reqwest::Response {
+    pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
         self.http_client
             .post(&format!("{}/login", &self.address))
+            .json(body)
             .send()
             .await
             .expect("Failed to execute request.")
-    } 
+    }
 
     pub async fn post_logout(&self) -> reqwest::Response {
         self.http_client
