@@ -1,36 +1,62 @@
 use axum::{ extract::State, http::StatusCode, response::IntoResponse, Json };
+use axum_extra::extract::CookieJar;
 use serde::{ Deserialize, Serialize };
-use std::sync::Arc;
 
-use crate::{ app_state::AppState, domain::{ AuthAPIError, Email, Password } };
+use crate::{
+    app_state::AppState,
+    domain::{ AuthAPIError, Email, Password },
+    utils::auth::generate_auth_cookie,
+};
 
 pub async fn login(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
+    jar: CookieJar, // New!
     Json(request): Json<LoginRequest>,
-) -> Result<impl IntoResponse, AuthAPIError> {
-    let email = Email::parse(request.email.clone()).map_err(|_| AuthAPIError::IncorrectCredentails)?;
-    let password = Password::parse(request.password.clone()).map_err(|_| AuthAPIError::IncorrectCredentails)?;
+) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
+    
+    let email = match Email::parse(request.email) {
+        Ok(email) => email,
+        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
+    };
 
-    let user_store = state.user_store.read().await;
+    let password = match Password::parse(request.password) {
+        Ok(password) => password,
+        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
+    };
+
+    let user_store = &state.user_store.read().await;
 
     // call `user_store.validate_user` and return
     // `AuthAPIError::IncorrectCredentials` if valudation fails.
 
     if user_store.validate_user(&email, &password).await.is_err() {
-        return Err(AuthAPIError::IncorrectCredentails);
+        return (jar, Err(AuthAPIError::IncorrectCredentials));
     };
-
+    
     // call `user_store.get_user`. Return AuthAPIError::IncorrectCredentials if the operation fails.
-
     if user_store.get_user(&email).await.is_err() {
-        return Err(AuthAPIError::IncorrectCredentails);
+        return (jar, Err(AuthAPIError::IncorrectCredentials));
     };
 
-    Ok(StatusCode::OK.into_response())
+    // Call the generate_auth_cookie function defined in the auth module.
+    // If the function call fails return AuthAPIError::UnexpectedError.
+    let auth_cookie = match generate_auth_cookie(&email) {
+        Ok(cookie) => cookie,
+        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+    };
+
+    let updated_jar = jar.add(auth_cookie);
+
+    (updated_jar, Ok(StatusCode::OK.into_response()))
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize,Clone)]
 pub struct LoginRequest {
-    email: String,
-    password: String,
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct LoginResponse {
+    pub message: String,
 }
