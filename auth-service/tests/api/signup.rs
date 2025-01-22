@@ -80,9 +80,9 @@ async fn should_return_400_if_invalid_input() {
             "requires2FA": true
         }),
         serde_json::json!({
-            "email": " ",
+            "email": "not email",
             "password": "password123",
-            "requires2FA": true
+            "requires2FA": false
         }),
     ];
 
@@ -101,7 +101,7 @@ async fn should_return_400_if_invalid_input() {
                 .await
                 .expect("Could not deserialize response body to ErrorResponse")
                 .error,
-            "Invalid credentials".to_owned()
+            "Invalid Credentials".to_owned()
         );
     }
 }
