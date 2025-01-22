@@ -3,16 +3,6 @@ use crate::helpers::{get_random_email, TestApp};
 use auth_service::{ utils::constants::JWT_COOKIE_NAME, ErrorResponse };
 use reqwest::Url;
 
-/* #[tokio::test]
-async fn logout_returns_200() {
-    let app = TestApp::new().await;
-
-    let response = app.post_logout().await;
-
-    assert_eq!(response.status().as_u16(), 200);
-}
-    */
-
 #[tokio::test]
 async fn should_return_400_if_jwt_cookie_missing() {
     let app = TestApp::new().await;
