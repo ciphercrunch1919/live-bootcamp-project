@@ -47,7 +47,7 @@ impl Application {
             .route("/verify-2fa", post(verify_2fa))
             .route("/logout", post(logout))
             .route("/verify-token", post(verify_token))
-            .with_state(app_state)
+            .with_state(app_state.into())
             .layer(cors); // Add CORS config to our Axum router
 
         let listener = tokio::net::TcpListener::bind(address).await?;
