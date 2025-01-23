@@ -11,7 +11,7 @@ services:
       auth-service:
         condition: service_started
   auth-service:
-    image: ciphercrunch/app-service
+    image: ciphercrunch/auth-service
     restart: "always"
     environment:
       JWT_SECRET: ${JWT_SECRET}
