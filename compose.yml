@@ -14,6 +14,6 @@ services:
     image: letsgetrusty/auth-service
     restart: "always"
     environment:
-      JWT_SECRET: ${JWT_SECRET} # New!
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "3000:3000"

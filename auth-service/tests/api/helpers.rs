@@ -1,11 +1,16 @@
 use std::sync::Arc;
-
-use auth_service::{
-    app_state::{AppState, BannedTokenStoreType}, services::{HashSetBannedTokenStore, HashmapUserStore}, utils::constants::test, Application
-};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 use reqwest::cookie::Jar;
+
+use auth_service::{
+    app_state::{AppState, BannedTokenStoreType},
+    services::{
+        hashmap_user_store::HashmapUserStore, hashset_banned_token_store::HashSetBannedTokenStore,
+    },
+    utils::constants::test,
+    Application,
+};
 
 pub struct TestApp {
     pub address: String,
@@ -78,7 +83,7 @@ impl TestApp {
 
     pub async fn post_logout(&self) -> reqwest::Response {
         self.http_client
-            .post(&format!("{}/logout", &self.address))
+            .post(format!("{}/logout", &self.address))
             .send()
             .await
             .expect("Failed to execute request.")
@@ -86,7 +91,7 @@ impl TestApp {
 
     pub async fn post_verify_2fa(&self) -> reqwest::Response {
         self.http_client
-            .post(&format!("{}/verify-2fa", &self.address))
+            .post(format!("{}/verify-2fa", &self.address))
             .send()
             .await
             .expect("Failed to execute request.")
