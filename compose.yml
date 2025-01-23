@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   app-service:
-    image: letsgetrusty/app-service
+    image: ciphercrunch/app-service
     restart: "always"
     environment:
       AUTH_SERVICE_IP: ${AUTH_SERVICE_IP}
@@ -11,7 +11,7 @@ services:
       auth-service:
         condition: service_started
   auth-service:
-    image: letsgetrusty/auth-service
+    image: ciphercrunch/app-service
     restart: "always"
     environment:
       JWT_SECRET: ${JWT_SECRET}
