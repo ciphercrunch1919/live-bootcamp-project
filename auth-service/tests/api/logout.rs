@@ -92,8 +92,20 @@ async fn should_return_200_if_valid_jwt_cookie() {
         .expect("Auth cookie not found");
     assert!(!auth_cookie.value().is_empty());
 
+    let token = auth_cookie.value();
+
     let response = app.post_logout().await;
     assert_eq!(response.status().as_u16(), 200);
+
+    assert!(!auth_cookie.value().is_empty());
+
+    let banned_token_store = app.banned_token_store.read().await;
+    let is_banned_token  = banned_token_store
+        .check_for_banned(token)
+        .await
+        .expect("Failed to check if token is banned");
+
+    assert!(is_banned_token);
 }
 
 #[tokio::test]
