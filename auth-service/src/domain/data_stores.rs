@@ -68,8 +68,14 @@ impl TwoFACode {
 
 impl Default for TwoFACode {
     fn default() -> Self {
-        let code: String = "123456".to_owned();
+        let code: String = "123456".to_string();
         TwoFACode(code)
+    }
+}
+
+impl AsRef<str> for TwoFACode {
+    fn as_ref(&self) -> &str {
+        &self.0
     }
 }
 
