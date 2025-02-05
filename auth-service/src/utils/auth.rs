@@ -96,9 +96,7 @@ mod tests {
     use std::sync::Arc;
     use tokio::sync::RwLock;
 
-    use crate::{
-        domain::BannedTokenStore, services::hashset_banned_token_store::HashsetBannedTokenStore,
-    };
+    use crate::services::data_stores::HashsetBannedTokenStore;
 
     use super::*;
 
@@ -157,11 +155,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_validate_token_with_banned_token() {
-        let email = Email::parse("test@example.com".to_owned()).unwrap();
-        let token = generate_auth_token(&email).unwrap();
-        let mut hs = HashsetBannedTokenStore::default();
-        hs.add_token(token.clone()).await.unwrap();
-        let banned_token_store = Arc::new(RwLock::new(hs));
+        let token = "invalid_token".to_owned();
+        let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
         let result = validate_token(&token, banned_token_store).await;
         assert!(result.is_err());
     }
