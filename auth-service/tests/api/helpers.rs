@@ -5,9 +5,9 @@ use uuid::Uuid;
 use reqwest::cookie::Jar;
 
 use auth_service::{
-    app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType}, get_postgres_pool, get_redis_client, services::data_stores::{
-        RedisTwoFACodeStore, MockEmailClient, PostgresUserStore, RedisBannedTokenStore
-    }, utils::constants::{test, DATABASE_URL, REDIS_HOST_NAME}, Application
+    app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType}, get_postgres_pool, get_redis_client, services::{data_stores::{
+        PostgresUserStore, RedisBannedTokenStore, RedisTwoFACodeStore
+    }, mock_email_client::MockEmailClient}, utils::constants::{test, DATABASE_URL, REDIS_HOST_NAME}, Application
 };
 
 pub struct TestApp {
@@ -42,7 +42,7 @@ impl TestApp {
 
         let email_client = Arc::new(MockEmailClient);
         
-        let app_state = AppState::new(user_store, banned_token_store.clone(), two_fa_code_store.clone(), email_client.clone());
+        let app_state = AppState::new(user_store, banned_token_store.clone(), two_fa_code_store.clone(), email_client);
 
         let app = Application::build(app_state, test::APP_ADDRESS)
             .await

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT email, password_hash, requires_2fa FROM users WHERE email = $1\n        ",
+  "query": "\n            SELECT email, password_hash, requires_2fa \n            FROM users \n            WHERE email = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -30,5 +30,5 @@
       false
     ]
   },
-  "hash": "814dcc6e00acdbda76e5f1ede0a5bf214831ef3c68b7cca0547b072eb00b3ffe"
+  "hash": "ba78d957ecf34a93fabef486acaaff4d4b0944cdf5906d5a011f5b12f2862e28"
 }

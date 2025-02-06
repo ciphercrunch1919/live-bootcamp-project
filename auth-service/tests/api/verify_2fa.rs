@@ -292,6 +292,8 @@ async fn should_return_401_if_old_code() {
     let response = app.post_verify_2fa(&request_body).await;
 
     assert_eq!(response.status().as_u16(), 401);
+
+    app.clean_up().await;
 }
 
 #[tokio::test]

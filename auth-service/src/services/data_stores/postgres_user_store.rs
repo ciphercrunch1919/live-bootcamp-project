@@ -26,66 +26,58 @@ impl UserStore for PostgresUserStore {
     // Implement all required methods. Note that you will need to make SQL queries against our PostgreSQL instance inside these methods.
 
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-      let password_hash = compute_password_hash(user.password.as_ref().to_string())
-          .await
-          .map_err(|_| UserStoreError::InvalidCredentials)?;
+        let password_hash = compute_password_hash(user.password.as_ref().to_owned())
+            .await
+            .map_err(|_| UserStoreError::UnexpectedError)?;
 
-      let query = sqlx::query!(
-          "
-          INSERT INTO users (email, password_hash, requires_2fa) VALUES ($1, $2, $3)
-          ",
-          user.email.as_ref(),
-          password_hash,
-          user.requires_2fa
-      );
-
-      query
-          .execute(&self.pool)
-          .await
-          .map_err(|_| UserStoreError::UnexpectedError)?;
+        sqlx::query!(
+            r#"
+            INSERT INTO users (email, password_hash, requires_2fa)
+            VALUES ($1, $2, $3)
+            "#,
+            user.email.as_ref(),
+            &password_hash,
+            user.requires_2fa
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|_| UserStoreError::UnexpectedError)?;
 
         Ok(())
     }
 
     async fn get_user(&self, email: &Email) ->Result<User, UserStoreError> {
-      let user = sqlx::query!(
-        "
-        SELECT email, password_hash, requires_2fa FROM users WHERE email = $1
-        ",
-        email.as_ref()
-      )
-      .fetch_optional(&self.pool)
-      .await
-      .map_err(|_| UserStoreError::UnexpectedError)?
-      .ok_or(UserStoreError::UserNotFound)?;
-
-      Ok(User {
-        email: Email::parse(user.email)
-          .map_err(|_| UserStoreError::InvalidCredentials)?,
-        password: Password::parse(user.password_hash)
-          .map_err(|_| UserStoreError::InvalidCredentials)?,
-        requires_2fa: user.requires_2fa
-      })
+        sqlx::query!(
+            r#"
+            SELECT email, password_hash, requires_2fa 
+            FROM users 
+            WHERE email = $1
+            "#,
+            email.as_ref()
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|_| UserStoreError::UnexpectedError)?
+        .map(|row| {
+            Ok(User {
+                email: Email::parse(row.email).map_err(|_| UserStoreError::UnexpectedError)?,
+                password: Password::parse(row.password_hash)
+                    .map_err(|_| UserStoreError::UnexpectedError)?,
+                requires_2fa: row.requires_2fa,
+            })
+        })
+        .ok_or(UserStoreError::UserNotFound)?
     }
 
     async fn validate_user(&self, email: &Email, password: &Password) -> Result<(), UserStoreError> {
-      let row = sqlx::query!(
-        "
-        SELECT password_hash FROM users WHERE email = $1
-        ",
-        email.as_ref()
-      )
-      .fetch_one(&self.pool)
-      .await
-      .map_err(|_| {
-          UserStoreError::UnexpectedError
-      })?;
+        let user = self.get_user(email).await?;
 
-      verify_password_hash(row.password_hash, password.as_ref().to_string())
+        verify_password_hash(
+            user.password.as_ref().to_owned(),
+            password.as_ref().to_owned(),
+        )
         .await
-        .map_err(|_| UserStoreError::InvalidCredentials)?;
-
-      Ok(())
+        .map_err(|_| UserStoreError::InvalidCredentials)
     }
 }
 
