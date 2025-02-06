@@ -15,10 +15,8 @@ async fn main() {
     let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
 
     let redis_client = Arc::new(RwLock::new(configure_redis()));
-    let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore ::new(redis_client)));
-
-    let redis_client = Arc::new(RwLock::new(configure_redis()));
-    let two_fa_code_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_client)));
+    let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore ::new(redis_client.clone())));
+let two_fa_code_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_client)));
 
     let email_client = Arc::new(MockEmailClient);
 
