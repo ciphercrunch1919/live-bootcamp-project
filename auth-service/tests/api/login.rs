@@ -8,7 +8,7 @@ use auth_service::{
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -42,11 +42,13 @@ async fn should_return_422_if_malformed_credentials() {
             test_case
         );
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let random_email = get_random_email();
 
     let signup = serde_json::json!({
@@ -90,11 +92,13 @@ async fn should_return_400_if_invalid_input() {
             "Invalid Credentials".to_owned()
         );
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_invalid_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -137,11 +141,13 @@ async fn should_return_401_if_invalid_credentials() {
             "Incorrect Credentials".to_owned()
         );
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -170,11 +176,13 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -192,6 +200,8 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         "email": random_email,
         "password": "password123",
     });
+
+    
 
     let response = app.post_login(&login).await;
 
@@ -214,4 +224,5 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
     assert_eq!(login_attempt_id, json_body.login_attempt_id);
 
+    app.clean_up().await;
 }

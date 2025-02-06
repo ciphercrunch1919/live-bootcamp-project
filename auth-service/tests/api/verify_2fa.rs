@@ -9,7 +9,7 @@ use crate::helpers::{get_random_email, TestApp};
 
 #[tokio::test]
 async fn should_return_200_if_correct_code() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -68,11 +68,13 @@ async fn should_return_200_if_correct_code() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
     let login_attempt_id = LoginAttemptId::default().as_ref().to_owned();
@@ -122,11 +124,13 @@ async fn should_return_400_if_invalid_input() {
             "Invalid Credentials".to_owned()
         );
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -220,11 +224,13 @@ async fn should_return_401_if_incorrect_credentials() {
             "Incorrect Credentials".to_owned()
         );
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_old_code() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -290,7 +296,7 @@ async fn should_return_401_if_old_code() {
 
 #[tokio::test]
 async fn should_return_401_if_same_code_twice() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -353,11 +359,13 @@ async fn should_return_401_if_same_code_twice() {
     let response = app.post_verify_2fa(&request_body).await;
 
     assert_eq!(response.status().as_u16(), 401);
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
     let login_attempt_id = LoginAttemptId::default().as_ref().to_owned();
@@ -397,4 +405,6 @@ async fn should_return_422_if_malformed_input() {
             test_case
         );
     }
+
+    app.clean_up().await;
 }

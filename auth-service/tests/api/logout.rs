@@ -5,7 +5,7 @@ use reqwest::Url;
 
 #[tokio::test]
 async fn should_return_400_if_jwt_cookie_missing() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let response = app.post_logout().await;
 
@@ -29,11 +29,13 @@ async fn should_return_400_if_jwt_cookie_missing() {
             .error,
         "Missing Token".to_owned()
     );
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_invalid_token() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     app.cookie_jar.add_cookie_str(
         &format!(
@@ -61,11 +63,13 @@ async fn should_return_401_if_invalid_token() {
             .error,
         "Invalid Token".to_owned()
     );
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_200_if_valid_jwt_cookie() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -76,7 +80,6 @@ async fn should_return_200_if_valid_jwt_cookie() {
     });
 
     let response = app.post_signup(&signup).await;
-
     assert_eq!(response.status().as_u16(), 201);
 
     let login = serde_json::json!({
@@ -91,7 +94,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
     let auth_cookie = response
         .cookies()
         .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
-        .expect("Auth cookie not found");
+        .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
 
@@ -104,9 +107,11 @@ async fn should_return_200_if_valid_jwt_cookie() {
     let auth_cookie = response
         .cookies()
         .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
-        .expect("Auth cookie not found");
+        .expect("No auth cookie found");
 
     assert!(auth_cookie.value().is_empty());
+
+    app.clean_up().await;
 
     let banned_token_store = app.banned_token_store.read().await;
     let contains_token = banned_token_store
@@ -119,7 +124,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
 #[tokio::test]
 async fn should_return_400_if_logout_called_twice_in_a_row() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -170,4 +175,6 @@ async fn should_return_400_if_logout_called_twice_in_a_row() {
             .error,
         "Missing Token".to_owned()
     );
+
+    app.clean_up().await;
 }
