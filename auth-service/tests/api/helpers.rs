@@ -5,9 +5,9 @@ use uuid::Uuid;
 use reqwest::cookie::Jar;
 
 use auth_service::{
-    app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType}, get_postgres_pool, services::data_stores::{
-        HashmapTwoFACodeStore, HashsetBannedTokenStore, MockEmailClient, PostgresUserStore
-    }, utils::constants::{test, DATABASE_URL}, Application
+    app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType}, get_postgres_pool, get_redis_client, services::data_stores::{
+        HashmapTwoFACodeStore, MockEmailClient, PostgresUserStore, RedisBannedTokenStore
+    }, utils::constants::{test, DATABASE_URL, REDIS_HOST_NAME}, Application
 };
 
 pub struct TestApp {
@@ -35,7 +35,9 @@ impl TestApp {
         let pg_pool = configure_postgresql().await;
 
         let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
-        let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+
+        let redis_client = Arc::new(RwLock::new(configure_redis()));
+        let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore ::new(redis_client)));
         let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
         let email_client = Arc::new(MockEmailClient);
         
@@ -220,4 +222,11 @@ async fn delete_database(db_name: &str) {
         .execute(format!(r#"DROP DATABASE "{}";"#, db_name).as_str())
         .await
         .expect("Failed to drop the database.");
+}
+
+fn configure_redis() -> redis::Connection {
+    get_redis_client(REDIS_HOST_NAME.to_owned())
+        .expect("Failed to get Redis client")
+        .get_connection()
+        .expect("Failed to get Redis connection")
 }
