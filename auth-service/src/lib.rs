@@ -13,7 +13,8 @@ use redis::{Client, RedisResult};
 use routes::{login, logout, signup, verify_2fa, verify_token};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use tower_http::{cors::CorsLayer, services::ServeDir};
+use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
+use utils::tracing::{make_span_with_request_id, on_request, on_response};
 
 pub mod app_state;
 pub mod domain;
@@ -46,7 +47,16 @@ impl Application {
             .route("/logout", post(logout))
             .route("/verify-token", post(verify_token))
             .with_state(app_state.into())
-            .layer(cors); // Add CORS config to our Axum router
+            .layer(cors)
+            .layer( // New!
+                // Add a TraceLayer for HTTP requests to enable detailed tracing
+                // This layer will create spans for each request using the make_span_with_request_id function,
+                // and log events at the start and end of each request using on_request and on_response functions.
+                TraceLayer::new_for_http()
+                    .make_span_with(make_span_with_request_id)
+                    .on_request(on_request)
+                    .on_response(on_response),
+            );
 
         let listener = tokio::net::TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();
@@ -56,7 +66,7 @@ impl Application {
     }
 
     pub async fn run(self) -> Result<(), std::io::Error> {
-        println!("listening on {}", &self.address);
+        tracing::info!("listening on {}", &self.address); // Updated!
         self.server.await
     }
 }

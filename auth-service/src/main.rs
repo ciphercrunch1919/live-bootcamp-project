@@ -9,12 +9,17 @@ use auth_service::{
         data_stores::{PostgresUserStore, RedisBannedTokenStore, RedisTwoFACodeStore},
         mock_email_client::MockEmailClient,
     },
-    utils::constants::{prod, DATABASE_URL, REDIS_HOST_NAME},
+    utils::{
+        constants::{prod, DATABASE_URL, REDIS_HOST_NAME}, 
+        tracing::init_tracing
+    },
     Application,
 };
 
 #[tokio::main]
 async fn main() {
+    init_tracing();
+    
     let pg_pool = configure_postgresql().await;
     let redis_client = Arc::new(RwLock::new(configure_redis()));
 
