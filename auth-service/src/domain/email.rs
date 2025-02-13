@@ -1,4 +1,5 @@
 use validator::validate_email;
+use color_eyre::eyre::Result;
 
 #[derive(Debug, PartialEq, Clone, Eq, Hash)]
 pub struct Email(String);

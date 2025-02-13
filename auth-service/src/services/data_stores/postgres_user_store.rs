@@ -1,4 +1,4 @@
-use std::error::Error;
+
 use color_eyre::eyre::{eyre, Context, Result};
 
 use argon2::{
