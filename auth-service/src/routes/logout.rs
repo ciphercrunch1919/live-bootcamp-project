@@ -25,7 +25,7 @@ pub async fn logout(State(state): State<AppState>, jar: CookieJar) -> (CookieJar
     if let Err(e) = banned_token_store
         .write()
         .await
-        .add_token(token.to_owned())
+        .add_token(token.to_owned().into())
         .await
     {
         return (jar, Err(AuthAPIError::UnexpectedError(e.into())));

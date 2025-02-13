@@ -1,6 +1,7 @@
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use secrecy::Secret;
 
 use auth_service::{
     app_state::AppState,

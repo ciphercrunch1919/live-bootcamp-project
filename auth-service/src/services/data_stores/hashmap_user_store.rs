@@ -45,12 +45,13 @@ impl UserStore for HashmapUserStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use secrecy::Secret;
 
     #[tokio::test]
     async fn test_add_user() {
         let mut user_store = HashmapUserStore::default();
-        let email = Email::parse("email@example.com".to_owned()).unwrap();
-        let password = Password::parse("password".to_owned()).unwrap();
+        let email = Email::parse(Secret::new("email@example.com".to_owned())).unwrap();
+        let password = Password::parse(Secret::new("password".to_owned())).unwrap();
         let user = User::new(email, password, false);
         user_store.add_user(user.clone()).await.unwrap();
         let get_user = user_store.get_user(&user.email).await;
@@ -66,8 +67,8 @@ mod tests {
     #[tokio::test]
     async fn test_get_user() {
         let mut user_store = HashmapUserStore::default();
-        let email = Email::parse("email@example.com".to_owned()).unwrap();
-        let password = Password::parse("password".to_owned()).unwrap();
+        let email = Email::parse(Secret::new("email@example.com".to_owned())).unwrap();
+        let password = Password::parse(Secret::new("password".to_owned())).unwrap();
         let user = User::new(email, password, false);
         user_store.add_user(user.clone()).await.unwrap();
         let get_user = user_store.get_user(&user.email).await;
@@ -78,8 +79,8 @@ mod tests {
     #[tokio::test]
     async fn test_validate_user() {
         let mut user_store = HashmapUserStore::default();
-        let email = Email::parse("example@email.com".to_owned()).unwrap();
-        let password = Password::parse("password".to_owned()).unwrap();
+        let email = Email::parse(Secret::new("example@email.com".to_owned())).unwrap();
+        let password = Password::parse(Secret::new("password".to_owned())).unwrap();
         let user = User::new(email.clone(), password.clone(), false);
 
         user_store.users.insert(email.clone(), user.clone());
@@ -87,14 +88,14 @@ mod tests {
         assert_eq!(result, Ok(()));
 
         // Test validating a user that exists with incorrect password
-        let wrong_password = Password::parse("wrongpassword".to_owned()).unwrap();
+        let wrong_password = Password::parse(Secret::new("wrongpassword".to_owned())).unwrap();
         let result = user_store.validate_user(&email, &wrong_password).await;
         assert_eq!(result, Err(UserStoreError::InvalidCredentials));
 
         // Test validating a user that doesn't exist
         let result = user_store
             .validate_user(
-                &Email::parse("nonexistent@example.com".to_string()).unwrap(),
+                &Email::parse(Secret::new("nonexistent@example.com".to_string())).unwrap(),
                 &password,
             )
             .await;

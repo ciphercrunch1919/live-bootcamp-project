@@ -16,15 +16,15 @@ pub async fn verify_2fa(
 ) -> Result<(CookieJar, impl IntoResponse), AuthAPIError> {
     
     // Validate the email in `request`
-    let email = Email::parse(request.email)
+    let email = Email::parse(request.email.into())
                 .map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     // Validate the login attempt ID in `request`
-    let login_attempt_id = LoginAttemptId::parse(request.login_attempt_id)
+    let login_attempt_id = LoginAttemptId::parse(request.login_attempt_id.into())
                 .map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     // Validate the 2FA code in `request`
-    let two_fa_code = TwoFACode::parse(request.two_fa_code)
+    let two_fa_code = TwoFACode::parse(request.two_fa_code.into())
                 .map_err(|_| AuthAPIError::InvalidCredentials)?;
     
     // New!

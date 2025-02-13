@@ -1,21 +1,29 @@
 use color_eyre::eyre::{eyre, Result};
+use secrecy::{ExposeSecret, Secret};
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct Password(String);
+#[derive(Debug, Clone)] // Updated
+pub struct Password(Secret<String>); //  Updated
+
+impl PartialEq for Password {
+  fn eq(&self, other: &Self) -> bool {
+    // We can use the expose_secret methoid to expose the secret in a controlled manner when needed!
+    self.0.expose_secret() == other.0.expose_secret() //update
+  }
+}
 
 impl Password {
-  pub fn parse(password: String) -> Result<Password> {
-    if password.len() >= 8 {
+  pub fn parse(password: Secret<String>) -> Result<Password> {
+    if password.expose_secret().len() >= 8 {
       Ok(Self(password))
     }
     else {
-      Err(eyre!(format!("Password must be at least 8 characters long, but was {} characters long", password.len())))
+      Err(eyre!("Failed to parse string to a Password type"))
     }
   }
 }
 
-impl AsRef<str> for Password {
-  fn as_ref(&self) -> &str {
+impl AsRef<Secret<String>> for Password {
+  fn as_ref(&self) -> &Secret<String> {
     &self.0
   }
 }
@@ -25,25 +33,26 @@ mod tests {
 
     use fake::faker::internet::en::Password as FakePassword;
     use fake::Fake;
+    use secrecy::Secret;
 
     #[test]
     fn empty_string_is_rejected() {
-        let password = "".to_owned();
+        let password = Secret::new("".to_owned());
         assert!(Password::parse(password).is_err());
     }
     #[test]
     fn string_less_than_8_characters_is_rejected() {
-        let password = "1234567".to_owned();
+        let password = Secret::new("1234567".to_owned());
         assert!(Password::parse(password).is_err());
     }
 
     #[derive(Debug, Clone)]
-    struct ValidPasswordFixture(pub String);
+    struct ValidPasswordFixture(pub Secret<String>);
 
     impl quickcheck::Arbitrary for ValidPasswordFixture {
         fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
             let password = FakePassword(8..30).fake_with_rng(g);
-            Self(password)
+            Self(Secret::new(password))
         }
     }
     #[quickcheck_macros::quickcheck]

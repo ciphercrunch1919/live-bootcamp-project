@@ -1,5 +1,6 @@
 
 use color_eyre::eyre::{eyre, Context, Result};
+use secrecy::{ExposeSecret, Secret}; // New!
 
 use argon2::{
     password_hash::SaltString, Algorithm, Argon2, Params, PasswordHash, PasswordHasher,
@@ -36,8 +37,8 @@ impl UserStore for PostgresUserStore {
             INSERT INTO users (email, password_hash, requires_2fa)
             VALUES ($1, $2, $3)
             "#,
-            user.email.as_ref(),
-            &password_hash,
+            user.email.as_ref().expose_secret(),
+            &password_hash.expose_secret(),
             user.requires_2fa
         )
         .execute(&self.pool)
@@ -55,17 +56,17 @@ impl UserStore for PostgresUserStore {
             FROM users
             WHERE email = $1
             "#,
-            email.as_ref()
+            email.as_ref().expose_secret()
         )
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| UserStoreError::UnexpectedError(e.into()))?
         .map(|row| {
             Ok(User {
-                email: Email::parse(row.email)
+                email: Email::parse(Secret::new(row.email))
                     .map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?, // Updated!
-                password: Password::parse(row.password_hash)
-                    .map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?, // Updated!
+                password: Password::parse(Secret::new(row.password_hash)) // Updated!
+                    .map_err(UserStoreError::UnexpectedError)?, // Updated!
                 requires_2fa: row.requires_2fa,
             })
         })
@@ -87,17 +88,17 @@ impl UserStore for PostgresUserStore {
 
 #[tracing::instrument(name = "Verify password hash", skip_all)] // New!
 pub async fn verify_password_hash(
-    expected_password_hash: String,
-    password_candidate: String,
+    expected_password_hash: Secret<String>,
+    password_candidate: Secret<String>,
 ) -> Result<()> {
     let current_span: tracing::Span = tracing::Span::current();
     let result = tokio::task::spawn_blocking(move || {
         current_span.in_scope(|| {
             let expected_password_hash: PasswordHash<'_> =
-                PasswordHash::new(&expected_password_hash)?;
+                PasswordHash::new(&expected_password_hash.expose_secret())?;
 
             Argon2::default()
-                .verify_password(password_candidate.as_bytes(), &expected_password_hash)
+                .verify_password(password_candidate.expose_secret().as_bytes(), &expected_password_hash)
                 .wrap_err("failed to verify password hash")
         })
     })
@@ -106,28 +107,22 @@ pub async fn verify_password_hash(
     result?
 }
 
-#[tracing::instrument(name = "Computing password hash", skip_all)] //New!
-pub async fn compute_password_hash(password: String) -> Result<String> {
-    // This line retrieves the current span from the tracing context. 
-    // The span represents the execution context for the compute_password_hash function.
-    let current_span: tracing::Span = tracing::Span::current(); // New!
+#[tracing::instrument(name = "Computing password hash", skip_all)] 
+pub async fn compute_password_hash(password: Secret<String>) -> Result<Secret<String>> {
+    let current_span: tracing::Span = tracing::Span::current();
 
     let result = tokio::task::spawn_blocking(move || {
-        // This code block ensures that the operations within the closure are executed within the context of the current span. 
-        // This is especially useful for tracing operations that are performed in a different thread or task, such as within tokio::task::spawn_blocking.
-        current_span.in_scope(|| { // New!
+        current_span.in_scope(|| {
             let salt: SaltString = SaltString::generate(&mut rand::thread_rng());
             let password_hash = Argon2::new(
                 Algorithm::Argon2id,
                 Version::V0x13,
                 Params::new(15000, 2, 1, None)?,
             )
-            .hash_password(password.as_bytes(), &salt)?
+            .hash_password(password.expose_secret().as_bytes(), &salt)?
             .to_string();
 
-            Ok(password_hash)
-            // Err(Box::new(std::io::Error::other("oh no!")) as Box<dyn Error + Send + Sync>)
-            // Err(eyre!("oh no!"))
+            Ok(Secret::new(password_hash)) // Updated!
         })
     })
     .await;

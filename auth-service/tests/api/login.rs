@@ -1,4 +1,5 @@
 use crate::helpers::{ get_random_email, TestApp };
+use secrecy::ExposeSecret;
 use auth_service::{
     domain::Email,
     routes::TwoFactorAuthResponse,
@@ -218,9 +219,9 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     let login_attempt_id = app.two_fa_code_store
         .read()
         .await
-        .get_code(&Email::parse(random_email).unwrap())
+        .get_code(&Email::parse(random_email.into()).unwrap())
         .await
-        .unwrap().0.as_ref().to_string();
+        .unwrap().0.expose_secret().to_string();
 
     assert_eq!(login_attempt_id, json_body.login_attempt_id);
 
